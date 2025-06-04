@@ -1,0 +1,47 @@
+
+
+services:
+  web:
+    image: nginx
+    
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    ports:
+    - "80:80"
+    # environment:
+    #  - NGINX_HOST=foobar.com
+    #  - NGINX_PORT=80  
+
+
+  
+  auth-service:
+    build: ./auth_service/
+    ports:
+    - 8080:8080
+    volumes:
+      - ./auth_service:/app
+    
+    
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - 6379:6379
+    command: redis-server --bind 0.0.0.0 --protected-mode no
+
+  postgres:
+    image: postgres
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: adminpass
+      POSTGRES_DB: dimochat
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+      
+volumes:
+  postgres_data:
