@@ -1,6 +1,10 @@
 # Используем официальный базовый образ Python
 FROM python:3.12
 
+# copilot, need review
+# Update system packages to reduce vulnerabilities
+# RUN apt-get update && apt-get upgrade -y && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 # Устанавливаем рабочую директорию внутри контейнера
 WORKDIR /app
 

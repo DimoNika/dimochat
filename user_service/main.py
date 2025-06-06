@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI):
     # my_func_thread.join()
     yield
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, root_path="/api/user-service")
 
 
 @app.get("/")
