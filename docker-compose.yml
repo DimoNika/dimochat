@@ -20,6 +20,14 @@ services:
     - 8080:8080
     volumes:
       - ./auth_service:/app
+
+  user-service:
+    build: ./user_service/
+    ports:
+    - 8081:8081
+    volumes:
+      - ./user_service:/app
+    
     
     
   redis:
