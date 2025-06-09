@@ -12,13 +12,9 @@ redis_db = redis.Redis(host="redis", port=6379, decode_responses=True)
 
 
 
-data = []
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     
-    print("hello")
-    data.append("hello ligespan")
     my_func_thread = threading.Thread(target=user_creation_worker)
     my_func_thread.start()
     
@@ -32,7 +28,7 @@ app = FastAPI(lifespan=lifespan, root_path="/api/user-service")
 
 @app.get("/")
 def read_root():
-    return {"message": "Hello from FastAPI. User service", "data": data }
+    return {"message": "Hello from FastAPI. User service", "data": "data" }
 
 # def run_fastapi():
 #     # Запускаем FastAPI на 8000 порту (uvicorn блокирует поток)

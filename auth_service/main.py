@@ -6,6 +6,11 @@ import redis
 import json
 from pydantic import BaseModel, constr, field_validator, Field, StringConstraints, ValidationError
 from typing import Annotated
+import uuid
+from passlib.hash import pbkdf2_sha256
+import redis.asyncio
+import asyncio
+import redis.asyncio.client
 
 class UserSignup(BaseModel):
     
@@ -15,7 +20,7 @@ class UserSignup(BaseModel):
             min_length=4,
             max_length=20,
             strip_whitespace=True,
-            pattern=r'^[a-zA-Z0-9_]+$',
+            pattern=r'^[A-Za-z0-9_]*[A-Za-z][A-Za-z0-9_]*$',  # atleast one letter
         )
     ]
     password1: Annotated[
@@ -40,7 +45,8 @@ class UserSignup(BaseModel):
     
 
 app = FastAPI(root_path="/api/auth-service")
-redis_db = redis.Redis(host="redis", port=6379, decode_responses=True)
+# redis_db = redis.Redis(host="redis", port=6379, decode_responses=True)
+redis_db = redis.asyncio.client.Redis(host="redis", port=6379, decode_responses=True)
 
 @app.get("/")
 async def main():
@@ -50,37 +56,49 @@ async def main():
 
 @app.get("/test")
 async def test():
-    print()
-    obj = {
-        "username": "first User",
-        "password": "user_pass",
-    }
-
-    json_obj = json.dumps(obj)
-
-    print(json_obj)
-    print(type(json_obj))
 
 
-    redis_db.lpush("testqueue", json_obj)
     return {"test": "obj generated"}
 
+
+from src.create_user_result import create_user_result
 @app.post("/create-user")
 async def create_user(request: Request, user: UserSignup):
-    try:
-        data = await request.json()
-        user = UserSignup(**data)  # ручная валидация, чтобы поймать ошибку
-    except ValidationError as e:
-        errors = []
-        for err in e.errors():
-            # err — dict с info об ошибке, например:
-            # {'loc': ('field_name',), 'msg': 'error message', 'type': 'error_type'}
-            errors.append({
-                "field": ".".join(str(i) for i in err['loc']),
-                "message": err['msg'],
-                "error_type": err['type']
-            })
-        return JSONResponse(status_code=422, content={"errors": errors})
 
-    user
-    return {"data": user}
+
+    # user.task_id = str(uuid.uuid4())
+    task_id = str(uuid.uuid4())
+    if user.password1 == user.password2:
+        data = {
+        "create_user_task_id": task_id,
+        "username": user.username,
+        "password": pbkdf2_sha256.hash(user.password1)
+        }
+
+        json_user = json.dumps(data)
+
+        # redis_db.("channel", "hello")
+
+        pubsub = redis_db.pubsub()
+
+        channel_name = f"create_user_task_id:{task_id}"
+
+        await pubsub.subscribe(channel_name)
+        await redis_db.lpush("create_user_queue", json_user)
+        result = await create_user_result(pubsub, channel_name)
+        # return type(result).mro
+
+        if result["is_succesful"] == True:
+            # do something cool here
+            return JSONResponse(content={"data": result})
+        elif result["is_succesful"] == False:
+            return JSONResponse(content={"data": result}, status_code=409)
+    else:
+        return JSONResponse(content={"data": {"info": "Passwords don't match"}}, status_code=400)
+    
+
+
+    
+
+
+
