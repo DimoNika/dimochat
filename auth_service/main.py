@@ -63,7 +63,54 @@ async def test():
 
 from src.create_user_result import create_user_result
 @app.post("/create-user")
-async def create_user(request: Request, user: UserSignup):
+async def create_user(request: Request):
+
+    try:
+        body = await request.json()
+        user = UserSignup(**body)  # вручную вызываем валидацию
+        print(type(user), "asdjapsjdjlk")
+    except ValidationError as validation_error:
+        validation_error : ValidationError
+        
+        result_response = []
+        for error in validation_error.errors():
+            error_info = {
+                "loc": error["loc"][0]
+            }
+            # too long
+            if error["type"] == "string_too_long":
+                error_info["custom_msg"] = "Too long."
+            # too short
+            elif error["type"] == "string_too_short":
+                error_info["custom_msg"] = "Too short."
+            # too pattern mismatch
+            elif error["type"] == "string_too_short":
+                error_info["custom_msg"] = "Forbidden symbols."
+            # else
+            else:
+                error_info["custom_msg"] = "Unknown error."
+            result_response.append(error_info)
+        return JSONResponse(content=result_response, status_code=409)
+
+
+                
+
+            
+
+#   {
+#     "type": "string_too_short",
+#     "loc": [
+#       "username"
+#     ],
+#     "msg": "String should have at least 4 characters",
+#     "input": "a!",
+#     "ctx": {
+#       "min_length": 4
+#     },
+#     "url": "https://errors.pydantic.dev/2.11/v/string_too_short"
+#   },
+        return
+        # user = UserSignup(**body)  # вручную вызываем валидацию
 
 
     # user.task_id = str(uuid.uuid4())
@@ -90,11 +137,11 @@ async def create_user(request: Request, user: UserSignup):
 
         if result["is_succesful"] == True:
             # do something cool here
-            return JSONResponse(content={"data": result})
+            return JSONResponse(content=[result])
         elif result["is_succesful"] == False:
-            return JSONResponse(content={"data": result}, status_code=409)
+            return JSONResponse(content=[result], status_code=409)
     else:
-        return JSONResponse(content={"data": {"info": "Passwords don't match"}}, status_code=400)
+        return JSONResponse(content=[{"custom_msg": "Passwords don't match"}], status_code=400)
     
 
 

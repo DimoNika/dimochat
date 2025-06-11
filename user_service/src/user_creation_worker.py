@@ -45,14 +45,15 @@ def user_creation_worker():
         except UsernameTaken:
             data = {
                 "is_succesful": False,
-                "info": "Error: username already taken"
+                "loc": "username",
+                "custom_msg": "Username already taken"
             }
             redis_db.publish(channel_name, json.dumps(data))
 
         except Exception as e:
             data = {
                 "is_succesful": False,
-                "info": "Error: unknown error occured",
+                "custom_msg": "Unknown error occured",
                 "test": str(e)
             }
             redis_db.publish(channel_name, json.dumps(data))

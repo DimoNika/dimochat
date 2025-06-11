@@ -6,7 +6,7 @@ import redis
 import json
 from contextlib import asynccontextmanager
 
-from user_creation_worker import user_creation_worker
+from src.user_creation_worker import user_creation_worker
 
 redis_db = redis.Redis(host="redis", port=6379, decode_responses=True)
 
