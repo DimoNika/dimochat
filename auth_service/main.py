@@ -104,7 +104,7 @@ async def create_user(request: Request):
             elif error["type"] == "string_too_short":
                 error_info["custom_msg"] = "Too short."
             # too pattern mismatch
-            elif error["type"] == "string_too_short":
+            elif error["type"] == "string_pattern_mismatch":
                 error_info["custom_msg"] = "Forbidden symbols."
             # else
             else:
