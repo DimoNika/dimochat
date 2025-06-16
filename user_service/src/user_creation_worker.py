@@ -2,7 +2,8 @@ import redis
 import json
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import User
+from models import User, RefreshToken
+from .token_managment import create_refresh_token
 
 
 engine = create_engine("postgresql+psycopg2://admin:adminpass@postgres/dimochat", echo=True)
@@ -31,7 +32,7 @@ def user_creation_worker():
     Steps:
         1. Get task and serialize it in dict
         2. Try to create user
-        3. Posts to certain pubsub "is_succesful": True/False
+        3. Posts to certain pubsub "is_successful": True/False
     """
     while True:
 
@@ -49,10 +50,16 @@ def user_creation_worker():
             new_user = User(username=user["username"], password=user["password"])
             session.add(new_user)
             session.commit()
+            session.refresh(new_user)
+            token = create_refresh_token({"user_id": new_user.id})
+            new_refresh_token = RefreshToken(token, new_user.id)
+            session.add(new_refresh_token)
+            session.commit()
+
 
         except UsernameTaken:
             data = {
-                "is_succesful": False,
+                "is_successful": False,
                 "loc": "username",
                 "custom_msg": "Username already taken"
             }
@@ -60,15 +67,18 @@ def user_creation_worker():
 
         except Exception as e:
             data = {
-                "is_succesful": False,
+                "is_successful": False,
                 "custom_msg": "Unknown error occured",
             }
+            print(str(e), flush=True)
             redis_db.publish(channel_name, json.dumps(data))
 
         else:
             data = {
-                "is_succesful": True,
-                "custom_msg": "User succefuly created"
+                "is_successful": True,
+                "custom_msg": "User successfuly created",
+                "user_id": new_user.id,
+                "refresh_token": token
             }
             redis_db.publish(channel_name, json.dumps(data))
 

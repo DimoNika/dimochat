@@ -1,1 +1,16 @@
 Generic single-database configuration.
+
+
+alembic revision --autogenerate -m "migration name"
+
+
+alembic upgrade head
+
+
+alembic upgrade +2              две версии включая текущую для апгрейда
+alembic downgrade -1            на предыдущую для даунгрейда
+alembic upgrade ae10+2          на версию ae10 + две за ней
+alembic current                 получить инфу о текущей версии
+alembic history --verbose       история, более подробно
+alembic downgrade base          даунгрейд в самое начало
+alembic upgrade head            апгрейд до самого конца

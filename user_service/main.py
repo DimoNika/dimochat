@@ -7,6 +7,9 @@ import json
 from contextlib import asynccontextmanager
 
 from src.user_creation_worker import user_creation_worker
+from src.user_rt_creation_worker import user_rt_creation_worker
+from src.login_user_worker import login_user_worker
+
 
 redis_db = redis.Redis(host="redis", port=6379, decode_responses=True)
 
@@ -16,8 +19,12 @@ redis_db = redis.Redis(host="redis", port=6379, decode_responses=True)
 async def lifespan(app: FastAPI):
 
     # Creating thread with function that waits user creation request fron autrh service
-    my_func_thread = threading.Thread(target=user_creation_worker)
-    my_func_thread.start()
+    my_func1_thread = threading.Thread(target=user_creation_worker)
+    my_func1_thread.start()
+    # my_func1_thread = threading.Thread(target=user_rt_creation_worker)
+    # my_func1_thread.start()
+    my_func1_thread = threading.Thread(target=login_user_worker)
+    my_func1_thread.start()
     yield
 
 app = FastAPI(lifespan=lifespan, root_path="/api/user-service")  # Fastapi app initialization with its user-service default path

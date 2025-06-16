@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 
+
 import redis
 import json
 from pydantic import BaseModel, StringConstraints, ValidationError
@@ -9,6 +10,12 @@ from typing import Annotated
 import uuid
 from passlib.hash import pbkdf2_sha256
 import redis.asyncio.client
+from src.token_managment import create_access_token, create_refresh_token, decode, auth
+from src.pubsub_response_getter import listen_pubsub_result
+# from src.create_user_rt_result import create_rt_user_result
+# from src.login_user_result import login_user_result
+
+# from src.token_managment import 
 
 
 
@@ -43,13 +50,17 @@ class UserSignup(BaseModel):
         )
     ]
     
+class UserLogin(BaseModel):
     
+    username: Annotated[str, StringConstraints()]
+    password: Annotated[str, StringConstraints()]
+
 
 app = FastAPI(root_path="/api/auth-service")  # Fastapi app initialization with its auth-service default path
 redis_db = redis.asyncio.client.Redis(host="redis", port=6379, decode_responses=True)  # redis_db instance initialization
 
 
-from src.create_user_result import create_user_result
+
 @app.post("/create-user")
 async def create_user(request: Request):
     """
@@ -65,7 +76,7 @@ async def create_user(request: Request):
         b. Field too long.
         c. Pattern mismatch.
 
-    2. If serialized succesfully passes data to user-service.
+    2. If serialized successfully passes data to user-service.
     
     Steps:
         a. Create data.
@@ -77,7 +88,7 @@ async def create_user(request: Request):
         `JsonRespose`s with respective status_code`s
         `List[Dict[str, str]]`
         {
-            "is_succesful": bool,
+            "is_successful": bool,
             "loc": str,
             custom_msg: str
         }
@@ -94,7 +105,7 @@ async def create_user(request: Request):
         result_response = []
         for error in validation_error.errors():  # iterate in errors list
             error_info = {
-                "is_succesful": False,
+                "is_successful": False,
                 "loc": error["loc"][0]  # mark for frontend in which field error occured. Very important
             }
             # too long
@@ -113,14 +124,16 @@ async def create_user(request: Request):
         return JSONResponse(content=result_response, status_code=409)  # in case of serialization error return to client
 
 
-    # 2. If serialized succesfully passes data to user-service.
+    # 2. If serialized successfully passes data to user-service.
     task_id = str(uuid.uuid4())
     if user.password1 == user.password2:
         # Data which which pass to user-service
+        # refresh_token = create_refresh_token(data)
         data = {
             "create_user_task_id": task_id,
             "username": user.username,
-            "password": pbkdf2_sha256.hash(user.password1)
+            "password": pbkdf2_sha256.hash(user.password1),
+
         }
         # Serialize data to JSON string type
         json_user = json.dumps(data)
@@ -131,21 +144,160 @@ async def create_user(request: Request):
 
         await pubsub.subscribe(channel_name)  # Subscribe to channel
         await redis_db.lpush("create_user_queue", json_user)  # Pass data to user-service
+
         try:
-            result = await create_user_result(pubsub, channel_name)  # Receive result about user creation
+            result: dict = await listen_pubsub_result(pubsub, channel_name)  # Receive result about user creation
         except Exception:
             # If in create_user_result() error occured
             JSONResponse(content=[{  
-                "is_succesful": False,
+                "is_successful": False,
                 "custom_msg": "Unknow result of usercreation in user-service"
             }], status_code=500)
         
         # Handle result
-        if result["is_succesful"] == True:
-            # do something cool here
-            return JSONResponse(content=[result])
-        elif result["is_succesful"] == False:
+        if result["is_successful"] == True:
+            """
+            Access-token we send in response and Refresh-token we send as Cookie
+            """
+
+            token_data = {
+                "user_id": result["user_id"]
+            }
+
+            access_token = create_access_token(token_data)
+            
+            result.update({"access_token": access_token})
+
+            #  Set-Cookie in response
+            response = JSONResponse(content=result)
+            response.set_cookie(
+                key="refresh_token",
+                value=result["refresh_token"],
+                httponly=True,
+                max_age=4_320_000,
+                samesite="Strict",
+                secure=True
+            )
+            
+            return response
+        elif result["is_successful"] == False:
             return JSONResponse(content=[result], status_code=409)
     else:
         return JSONResponse(content=[{"custom_msg": "Passwords don't match"}], status_code=400)
     
+
+@app.post("/refresh")
+async def refresh(request: Request):
+    print(request.cookies)
+
+    if auth(request.cookies["refresh_token"]):
+        refresh_token = decode(request.cookies["refresh_token"])
+        access_token_data =  {
+            "user_id": refresh_token["user_id"]
+        }
+
+        data = {
+            "access_token": create_access_token(access_token_data)
+        }
+        return data
+    else:
+        return JSONResponse(status_code=401)
+
+@app.post("/login")
+async def refresh(request: Request, user: UserLogin):
+
+    task_id = str(uuid.uuid4())
+    # Data which which pass to user-service
+    data = {
+        "login_user_task_id": task_id,
+        "username": user.username,
+        # "password": pbkdf2_sha256.hash(user.password),
+    }
+    # Serialize data to JSON string type
+    json_user = json.dumps(data)
+
+
+    pubsub = redis_db.pubsub()  # Initialize pubsub object
+    channel_name = f"login_user_task_id:{task_id}"  # Initialize channel name
+
+    await pubsub.subscribe(channel_name)  # Subscribe to channel
+    await redis_db.lpush("login_user_queue", json_user)  # Pass data to user-service
+
+    # try:
+
+    result: dict = await listen_pubsub_result(pubsub, channel_name)  # Receive result about user creation
+    if result["is_successful"] == True:
+        if pbkdf2_sha256.verify(user.password, result["password"]):
+            response_data = {
+            "is_successful": True
+            }
+
+            token_data = {
+                "user_id": result["user_id"]
+            }
+            access_token = create_access_token(token_data)
+            response_data.update({"access_token": access_token})
+
+            response = JSONResponse(content=response_data)
+
+            response.set_cookie(
+                key="refresh_token",
+                value=result["refresh_token"],
+                httponly=True,
+                max_age=4_320_000,
+                samesite="Strict",
+                secure=True
+            )
+
+
+
+            return response
+        else:
+            return JSONResponse(content={"custom_msg": "Unsuccessful to find user."}, status_code=500)
+            
+    else:
+        response_data = {
+            "is_successful": False,
+            "custom_msg": "Invalid credentials"
+        }
+        return JSONResponse(content=response_data, status_code=401)
+
+
+
+
+
+# @app.get("/refresh")
+# async def refresh(request: Request):
+#     # print(request.cookies)
+#     """
+#     1. Authenticate token
+#     2. Subscribe to pubsub about token creation
+#     3. Make task to add new refresh token to user 
+#     """
+#     if auth(request.cookies["refresh_token"]):
+#         task_id = str(uuid.uuid4())
+
+#         decoded_rt = decode(request.cookies["refresh_token"])
+#         # user_id = rt["user_id"]
+#         data = {
+#             "create_rt_user_task_id": task_id,
+#             "user_id": decoded_rt["user_id"]
+#         }
+#         pubsub = redis_db.pubsub()  # Initialize pubsub object
+#         channel_name = f"create_rt_user_task_id:{task_id}"  # Initialize channel name
+
+#         await pubsub.subscribe(channel_name)  # Subscribe to channel
+#         await redis_db.lpush("create_rt_user_queue", json.dumps(data))  # Pass data to user-service
+#         try:
+#             result: dict = await create_rt_user_result(pubsub, channel_name)  # Receive result about user creation
+
+#         except Exception as e:
+#             print(f"ERROR: {str(e)}")
+#     else:
+#         return JSONResponse(status_code=401)  # Unauthenticated refresh token
+
+@app.get("/test")
+async def refresh(request: Request):
+
+
+    return {"data": "test"}

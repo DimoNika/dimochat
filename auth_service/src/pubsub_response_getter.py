@@ -2,6 +2,7 @@ import redis
 import asyncio
 import json
 import redis.asyncio.client
+import time
 
 """
 In this file logic that receives result of user creation in user service  
@@ -9,14 +10,13 @@ In this file logic that receives result of user creation in user service
 
 redis_db = redis.asyncio.Redis(host="redis", port=6379, decode_responses=True)
 
-import time
 
-async def create_user_result(pubsub: redis.asyncio.client.PubSub, channel_name: str):
+async def listen_pubsub_result(pubsub: redis.asyncio.client.PubSub, channel_name: str):
     """
     ### This function receives result of user creation in user service.
 
-    It iterates with `get_message()` and if succeful returns `is_succesful: True`
-    if not `is_succesful: False`
+    It iterates with `get_message()` and if succeful returns `is_successful: True`
+    if not `is_successful: False`
 
     Function works 5 sec else dies
     Might be error
