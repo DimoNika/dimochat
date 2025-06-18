@@ -296,8 +296,15 @@ async def refresh(request: Request, user: UserLogin):
 #     else:
 #         return JSONResponse(status_code=401)  # Unauthenticated refresh token
 
-@app.get("/test")
-async def refresh(request: Request):
-
-
-    return {"data": "test"}
+@app.get("/auth")
+async def auth_user(request: Request):
+    authenticate_header: str = request.headers.get("Authenticate")
+    print(authenticate_header)
+    if authenticate_header:
+        authenticate_header_parts = authenticate_header.split(" ")
+        if authenticate_header_parts[0] == "Bearer":
+            return auth(authenticate_header_parts[1])  # Returns true or false
+        else: 
+            return JSONResponse(content={"custom_msg": "Some headers problems"}, status_code=400)
+    else:
+        return JSONResponse(content={"custom_msg": "No header provided"}, status_code=400)

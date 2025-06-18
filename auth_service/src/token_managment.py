@@ -1,12 +1,31 @@
 from datetime import datetime, timedelta, timezone
 from jose import jwt, jws, jwe
-from jose.exceptions import JWSError
+from jose.exceptions import JWSError, ExpiredSignatureError
 
 SECRET_KEY = "JWT_SECRET_KEYJWT_SECRET_KEYJWT_SECRET_KEY1"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 0.8  # 15 mins
+ACCESS_TOKEN_EXPIRE_MINUTES = 15  # 15 mins
 REFRESH_TOKEN_EXPIRE_MINUTES = 72000  # 50 days
-
+OPTIONS = {
+    'verify_signature': True,
+    'verify_aud': False,
+    'verify_iat': False,
+    'verify_exp': True,
+    'verify_nbf': False,
+    'verify_iss': False,
+    'verify_sub': False,
+    'verify_jti': False,
+    'verify_at_hash': False,
+    'require_aud': False,
+    'require_iat': False,
+    'require_exp': False,
+    'require_nbf': False,
+    'require_iss': False,
+    'require_sub': False,
+    'require_jti': False,
+    'require_at_hash': False,
+    'leeway': 0,
+}
 
 
 def auth(token):
@@ -15,10 +34,14 @@ def auth(token):
     Returns bool
     """
     try:
-        jws.verify(token, SECRET_KEY, algorithms=[ALGORITHM])
+        jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM], options=OPTIONS)
+        # jws.verify(token, SECRET_KEY, algorithms=[ALGORITHM])
     except JWSError:
         return False
+    except ExpiredSignatureError:
+        return False
     except Exception as e:
+        return False
         raise Exception(f"Something happened in verifying JWT: {str(e)}")
     else:
         return True

@@ -7,7 +7,6 @@ import json
 from contextlib import asynccontextmanager
 
 from src.user_creation_worker import user_creation_worker
-from src.user_rt_creation_worker import user_rt_creation_worker
 from src.login_user_worker import login_user_worker
 
 
@@ -21,8 +20,6 @@ async def lifespan(app: FastAPI):
     # Creating thread with function that waits user creation request fron autrh service
     my_func1_thread = threading.Thread(target=user_creation_worker)
     my_func1_thread.start()
-    # my_func1_thread = threading.Thread(target=user_rt_creation_worker)
-    # my_func1_thread.start()
     my_func1_thread = threading.Thread(target=login_user_worker)
     my_func1_thread.start()
     yield
