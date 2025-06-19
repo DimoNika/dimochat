@@ -264,38 +264,6 @@ async def refresh(request: Request, user: UserLogin):
 
 
 
-
-
-# @app.get("/refresh")
-# async def refresh(request: Request):
-#     # print(request.cookies)
-#     """
-#     1. Authenticate token
-#     2. Subscribe to pubsub about token creation
-#     3. Make task to add new refresh token to user 
-#     """
-#     if auth(request.cookies["refresh_token"]):
-#         task_id = str(uuid.uuid4())
-
-#         decoded_rt = decode(request.cookies["refresh_token"])
-#         # user_id = rt["user_id"]
-#         data = {
-#             "create_rt_user_task_id": task_id,
-#             "user_id": decoded_rt["user_id"]
-#         }
-#         pubsub = redis_db.pubsub()  # Initialize pubsub object
-#         channel_name = f"create_rt_user_task_id:{task_id}"  # Initialize channel name
-
-#         await pubsub.subscribe(channel_name)  # Subscribe to channel
-#         await redis_db.lpush("create_rt_user_queue", json.dumps(data))  # Pass data to user-service
-#         try:
-#             result: dict = await create_rt_user_result(pubsub, channel_name)  # Receive result about user creation
-
-#         except Exception as e:
-#             print(f"ERROR: {str(e)}")
-#     else:
-#         return JSONResponse(status_code=401)  # Unauthenticated refresh token
-
 @app.get("/auth")
 async def auth_user(request: Request):
     authenticate_header: str = request.headers.get("Authenticate")
