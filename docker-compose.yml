@@ -21,6 +21,8 @@ services:
     - 8080:8080
     volumes:
       - ./auth_service:/app
+      - ./shared:/app/shared
+
 
   user-service:
     build: ./user_service/
@@ -28,6 +30,17 @@ services:
     - 8081:8081
     volumes:
       - ./user_service:/app
+      - ./shared:/app/shared
+
+
+  chat-service:
+    build: ./chat_service/
+    ports:
+    - 8082:8082
+    volumes:
+      - ./chat_service:/app
+      - ./shared:/app/shared
+
     
     
     

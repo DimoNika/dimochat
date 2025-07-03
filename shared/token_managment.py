@@ -7,10 +7,10 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 15  # 15 mins
 REFRESH_TOKEN_EXPIRE_MINUTES = 72000  # 50 days
 OPTIONS = {
-    'verify_signature': True,
+    'verify_signature': True,  # True
     'verify_aud': False,
     'verify_iat': False,
-    'verify_exp': True,
+    'verify_exp': True,  # True
     'verify_nbf': False,
     'verify_iss': False,
     'verify_sub': False,

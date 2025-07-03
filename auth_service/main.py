@@ -10,7 +10,8 @@ from typing import Annotated
 import uuid
 from passlib.hash import pbkdf2_sha256
 import redis.asyncio.client
-from src.token_managment import create_access_token, create_refresh_token, decode, auth
+# from src.token_managment import create_access_token, create_refresh_token, decode, auth
+from shared.token_managment import create_access_token, create_refresh_token, decode, auth
 from src.pubsub_response_getter import listen_pubsub_result
 # from src.create_user_rt_result import create_rt_user_result
 # from src.login_user_result import login_user_result
@@ -190,18 +191,55 @@ async def create_user(request: Request):
 async def refresh(request: Request):
     print(request.cookies)
 
-    if auth(request.cookies["refresh_token"]):
-        refresh_token = decode(request.cookies["refresh_token"])
-        access_token_data =  {
-            "user_id": refresh_token["user_id"]
-        }
+    try:
+        token = request.cookies.get("refresh_token") 
+        if token:  # If there is no token return unauthenticated
+            if auth(token):
+                token_data = decode(token)
 
-        data = {
-            "access_token": create_access_token(access_token_data)
-        }
-        return data
-    else:
-        return JSONResponse(status_code=401)
+                # Data to encode to access token
+                access_token_data =  {
+                    "user_id": token_data["user_id"]
+                }
+
+                # Data that will be returned to the client
+                data = {
+                    "access_token": create_access_token(access_token_data)
+                }
+                return data
+            else:
+                return JSONResponse(content={"custom_msg": "Refresh token unauthenticated"}, status_code=401)
+            
+
+        else: # If there is no token return unauthenticated
+            return JSONResponse(content={"custom_msg": "No refresh token provided"}, status_code=401)
+    except Exception as e:
+        return JSONResponse(content={"custom_msg": f"Unknown error occured during access token refreshing: {str(e)}", "loc": "/api/auth-service/refresh"}, status_code=401)
+    
+
+    
+    # # return "alo"
+    # try:
+    #     request.cookies["refresh_token"]
+    # except ValueError:
+    #     return JSONResponse(content={"custom_msg": "No refresh token provided"}, status_code=401)
+    
+    # if not request.cookies["refresh_token"][1]:
+    #     return JSONResponse(content={"custom_msg": "No refresh token provided"}, status_code=401)
+
+
+    # if auth(request.cookies["refresh_token"]):
+    #     refresh_token = decode(request.cookies["refresh_token"])
+    #     access_token_data =  {
+    #         "user_id": refresh_token["user_id"]
+    #     }
+
+    #     data = {
+    #         "access_token": create_access_token(access_token_data)
+    #     }
+    #     return data
+    # else:
+    #     return JSONResponse(status_code=401)
 
 @app.post("/login")
 async def refresh(request: Request, user: UserLogin):

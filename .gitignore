@@ -34,3 +34,8 @@ coverage
 *.tsbuildinfo
 
 .vscode
+
+# Generates by docker volumes
+auth_service/shared
+user_service/shared
+chat_service/shared

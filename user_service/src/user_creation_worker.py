@@ -2,8 +2,8 @@ import redis
 import json
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import User, RefreshToken
-from .token_managment import create_refresh_token
+from shared.models import User, RefreshToken
+from shared.token_managment import create_refresh_token
 
 
 engine = create_engine("postgresql+psycopg2://admin:adminpass@postgres/dimochat", echo=True)
