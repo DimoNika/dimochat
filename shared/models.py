@@ -87,6 +87,18 @@ class Message(Base):
         self.chat_id = chat_id
         self.sender_id = sender_id
         self.text = text
+    
+    def to_dict(self) -> dict:
+        return {
+            "id":           self.id,
+            "chat_id":      self.chat_id,
+            "sender_id":    self.sender_id,
+            "sent_at":      str(self.sent_at),
+            "text":         self.text,
+            "is_deleted":   self.is_deleted,
+            "edited_at":    str(self.edited_at),
+        }
+
 
 
 

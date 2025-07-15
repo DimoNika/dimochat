@@ -40,7 +40,14 @@ class ConnectionManager:
         self.active_connections.pop(websocket)
 
     async def send_personal_message(self, message: dict, websocket: WebSocket):
-        await websocket.send_json(message)
+        try:
+            await websocket.send_json(message)
+        except AttributeError as e:
+            # If AttributeError means other user in chat not connected, its ok. Nothing happends
+            pass
+        except Exception as e:
+            print(f"Un expected ERROR in ConnectionManager.send_personal_message(): {str(e)}")
+            
 
     # async def broadcast(self, message: str):
     #     for connection in self.active_connections:
@@ -158,13 +165,13 @@ def super_func(session: Session, user_id: int):
         )
 
         print("messagee", message)
+        if message:
+            chat_obj["last_message"] = {
+                "text": message.text,
+                "sent_at": message.sent_at,
+            }
 
-        chat_obj["last_message"] = {
-            "text": message.text,
-            "sent_at": message.sent_at,
-        }
-
-        data.append(chat_obj)
+            data.append(chat_obj)
 
 
     print(data)
@@ -224,15 +231,15 @@ async def websocket_endpoint(websocket: WebSocket):
     If not Authnticated closes connection
     """
     await websocket.accept()
-    await websocket.send_text(f"You connected to the server")
+    # await websocket.send_json({"info": "You connected to the server"})
 
     # Authenticate connection
     data: dict= await websocket.receive_json()
     if auth(data.get("access_token")):
         try:
-            await websocket.send_text(f"You authenticated")
+            # await websocket.send_text(f"You authenticated")
             access_token = decode(data.get("access_token"))
-            await manager.add(access_token.get("user_id"), websocket)  # User Authenticated and added to the all cannection dict
+            await manager.add(access_token.get("user_id"), websocket)  # User Authenticated and added to the all connection dict
             # await websocket.send_text(f"All connections: {manager.active_connections}")
             this_user_id = access_token.get("user_id")
             
@@ -260,21 +267,35 @@ async def websocket_endpoint(websocket: WebSocket):
                         new_message = Message(chat.id, this_user.id, message.get("message"))
                         other_user_websocket = manager.active_connections.get(other_user_id)
                         try:
+                            print(manager.active_connections, "active connctions")
+                            session.add(new_message)
+                            session.commit()
+                            session.refresh(new_message)
                             # other_user_websocket.send_text("hello new message")
-                            await manager.send_personal_message({"data": "hello world"}, manager.active_connections.get(other_user_id))
+                            # This sent to the receiver
+                            data = {
+                                "message_obj": new_message.to_dict(),
+                                "sent_at": str(new_message.sent_at),
+                                "sender_id": this_user_id,
+                                "receiver_id": other_user_id,
+                                "receiver_username": session.query(User).filter_by(id=other_user_id).first().username,
+                            }
+                            await manager.send_personal_message(data, manager.active_connections.get(other_user_id))
+                            # {
+                            #     "info": "message sent",
+                            #     "message_obj": new_message.to_dict(),
+                            #     # "is_own_message": True,
+                            #     "sender_id": this_user.id,
+                            #     "receiver_id": other_user_id,
+                            #     "receiver_username": session.query(User).filter_by(id=other_user_id).first().username,
+
+                            #     "data": str(manager.active_connections)
+                            # }
+                            # This sent to the sender
+                            await websocket.send_json(data)
                         except Exception as e:
-                            print(f"Erorr {str(e)}")
+                            print(f"Error here: {str(e)}")
 
-                        await websocket.send_json({
-                            "info": "message sent",
-                            "your_id": this_user.id,
-                            "chatter_id": other_user_id,
-                            "data": str(manager.active_connections)
-                        })
-
-                        session.add(new_message)
-                        session.commit()
-                        pass
                     else:
                         # if chat NOT exists between those users, then we create it
                         new_chat = Chat()
@@ -447,10 +468,10 @@ async def load_messages(request: Request):
             session: Session
             messages_list = get_messages_between_users(session, user_id, chatter_id)
             return messages_list
-        return {
-            "chatter_id": chatter_id,
-            "user_id": user_id
-        }
+        # return {
+        #     "chatter_id": chatter_id,
+        #     "user_id": user_id
+        # }
         
         
         
