@@ -283,7 +283,7 @@ async def refresh(request: Request, user: UserLogin):
                 value=result["refresh_token"],
                 httponly=True,
                 max_age=4_320_000,
-                samesite="Strict",
+                samesite="lax",
                 secure=True
             )
 
