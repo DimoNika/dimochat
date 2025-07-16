@@ -3,7 +3,7 @@
 services:
   web:
     image: nginx
-    
+
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
       - ./frontend/dist:/frontend
@@ -16,7 +16,7 @@ services:
       - backend
 
 
-  
+
   auth-service:
     build: ./auth_service/
     ports:
@@ -76,9 +76,9 @@ services:
     container_name: postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: dimochat
-      POSTGRES_USER: username 
-      POSTGRES_PASSWORD: strong_pass
+      POSTGRES_DB: a
+      POSTGRES_USER: a
+      POSTGRES_PASSWORD: a
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
