@@ -177,7 +177,7 @@ async def create_user(request: Request):
                 httponly=True,
                 max_age=4_320_000,
                 samesite="none",
-                secure=True
+                secure=False
             )
             
             return response
@@ -284,7 +284,7 @@ async def refresh(request: Request, user: UserLogin):
                 httponly=True,
                 max_age=4_320_000,
                 samesite="none",
-                secure=True
+                secure=False
             )
 
 
