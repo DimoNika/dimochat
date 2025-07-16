@@ -6,8 +6,22 @@ from shared.models import User, RefreshToken
 from shared.token_managment import create_refresh_token
 # from ...shared.token_managment import create_refresh_token
 
+from dotenv import load_dotenv
+import os
+from pathlib import Path
 
-engine = create_engine("postgresql+psycopg2://admin:adminpass@postgres/dimochat", echo=True)
+
+# env_path = Path(__file__).parent / "shared" / ".env"
+env_path = Path(__file__).resolve().parent.parent / "shared" / ".env"
+load_dotenv(env_path)
+
+
+postgre_user = os.getenv("POSTGRES_USER")
+postgre_password = os.getenv("POSTGRES_PASSWORD")
+postgres_db = os.getenv("POSTGRES_DB")
+
+engine = create_engine(f"postgresql+psycopg2://{postgre_user}:{postgre_password}@postgres/{postgres_db}", echo=True)
+# engine = create_engine("postgresql+psycopg2://admin:adminpass@postgres/dimochat", echo=True)
 Session = sessionmaker(engine)
 session = Session()
 

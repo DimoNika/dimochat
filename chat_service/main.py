@@ -13,8 +13,22 @@ from shared.token_managment import auth, decode
 app = FastAPI(root_path="/api/chat-service")
 # app = FastAPI(root_path="")
 
+# environment variables block
+from dotenv import load_dotenv
+import os
+from pathlib import Path
 
-engine = create_engine("postgresql+psycopg2://admin:adminpass@postgres/dimochat", echo=True)
+env_path = Path(__file__).resolve().parent / "shared" / ".env"
+load_dotenv(env_path)
+
+
+postgre_user = os.getenv("POSTGRES_USER")
+postgre_password = os.getenv("POSTGRES_PASSWORD")
+postgres_db = os.getenv("POSTGRES_DB")
+# environment variables block
+
+
+engine = create_engine(f"postgresql+psycopg2://{postgre_user}:{postgre_password}@postgres/{postgres_db}", echo=True)
 sessionLocal: Session = sessionmaker(engine)
 
 
