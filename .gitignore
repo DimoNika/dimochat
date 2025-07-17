@@ -41,3 +41,7 @@ user_service/shared
 chat_service/shared
 
 .env
+*.pem
+
+# my file that makes ssls fot testing https://github.com/FiloSottile/mkcert/releases/tag/v1.4.4
+mkcert
