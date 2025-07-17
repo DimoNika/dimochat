@@ -176,8 +176,8 @@ async def create_user(request: Request):
                 value=result["refresh_token"],
                 httponly=True,
                 max_age=4_320_000,
-                samesite="none",
-                secure=False
+                samesite="Strict",
+                secure=True
             )
             
             return response
@@ -283,8 +283,8 @@ async def refresh(request: Request, user: UserLogin):
                 value=result["refresh_token"],
                 httponly=True,
                 max_age=4_320_000,
-                samesite="none",
-                secure=False
+                samesite="Strict",
+                secure=True
             )
 
 
