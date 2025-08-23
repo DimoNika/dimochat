@@ -314,3 +314,18 @@ async def auth_user(request: Request):
             return JSONResponse(content={"custom_msg": "Some headers problems"}, status_code=400)
     else:
         return JSONResponse(content={"custom_msg": "No header provided"}, status_code=400)
+
+
+
+@app.get("/logout")
+async def logout():
+    response = JSONResponse(content={"detail": "User logged out."})
+    response.set_cookie(
+        key="refresh_token",
+        value={},
+        httponly=True,
+        max_age=1,
+        samesite="Strict",
+        secure=True
+    )
+    return response
