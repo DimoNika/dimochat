@@ -6,12 +6,13 @@ from shared.models import User, RefreshToken
 from shared.token_managment import create_refresh_token
 # from ...shared.token_managment import create_refresh_token
 
+
+
+# environment variables block
 from dotenv import load_dotenv
 import os
 from pathlib import Path
 
-
-# env_path = Path(__file__).parent / "shared" / ".env"
 env_path = Path(__file__).resolve().parent.parent / "shared" / ".env"
 load_dotenv(env_path)
 
@@ -19,16 +20,19 @@ load_dotenv(env_path)
 postgre_user = os.getenv("POSTGRES_USER")
 postgre_password = os.getenv("POSTGRES_PASSWORD")
 postgres_db = os.getenv("POSTGRES_DB")
+# environment variables block
+
+
 
 engine = create_engine(f"postgresql+psycopg2://{postgre_user}:{postgre_password}@postgres/{postgres_db}", echo=True)
-# engine = create_engine("postgresql+psycopg2://admin:adminpass@postgres/dimochat", echo=True)
+
 Session = sessionmaker(engine)
 session = Session()
 
 """
 In this file is worker that listents to auth-service for user creating tasks
 
-Function is suncronys
+Function is syncronys
 """
 
 
