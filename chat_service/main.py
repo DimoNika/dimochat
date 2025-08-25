@@ -291,6 +291,7 @@ async def websocket_endpoint(websocket: WebSocket):
                                 "message_obj": new_message.to_dict(),
                                 "sent_at": str(new_message.sent_at),
                                 "sender_id": this_user_id,
+                                "sender_username": this_user.username,
                                 "receiver_id": other_user_id,
                                 "receiver_username": session.query(User).filter_by(id=other_user_id).first().username,
                             }
@@ -311,33 +312,44 @@ async def websocket_endpoint(websocket: WebSocket):
                             print(f"Error here: {str(e)}")
 
                     else:
-                        # if chat NOT exists between those users, then we create it
-                        new_chat = Chat()
-                    
-                        session.add(new_chat)
-                        session.commit()
-                        session.refresh(new_chat)
-
-                        this_user_CP = ChatParticipant(chat_id=new_chat.id, user_id=this_user.id)
-                        other_user_CP = ChatParticipant(chat_id=new_chat.id, user_id=other_user.id)
-
-                        session.add(this_user_CP)
-                        session.add(other_user_CP)
+                        # if chat NOT exists between those users, then we create itr
+                        try:
+                            new_chat = Chat()
                         
-                        session.commit()
+                            session.add(new_chat)
+                            session.commit()
+                            session.refresh(new_chat)
 
-                        # Chat created, then send message itself
+                            this_user_CP = ChatParticipant(chat_id=new_chat.id, user_id=this_user.id)
+                            other_user_CP = ChatParticipant(chat_id=new_chat.id, user_id=other_user.id)
 
-                        new_message = Message(new_chat.id, this_user.id, message.get("message"))
+                            session.add(this_user_CP)
+                            session.add(other_user_CP)
+                            
+                            session.commit()
 
-                        session.add(new_message)
-                        session.commit()
+                            # Chat created, then send message itself
+                            new_message = Message(new_chat.id, this_user.id, message.get("message"))
+                            
+                            session.add(new_message)
+                            session.commit()
+                            session.refresh(new_message)
+
+                            data = {
+                                "message_obj": new_message.to_dict(),
+                                "sent_at": str(new_message.sent_at),
+                                "sender_id": this_user_id,
+                                "sender_username": this_user.username,
+                                "receiver_id": other_user_id,
+                                "receiver_username": session.query(User).filter_by(id=other_user_id).first().username,
+                            }
+                            await manager.send_personal_message(data, manager.active_connections.get(other_user_id))
 
 
+                            print(this_user.chat_list)
 
-
-
-                        print(this_user.chat_list)
+                        except Exception as e:
+                            print(f"Exeprion in creatin new chat: {e}")
 
 
 
