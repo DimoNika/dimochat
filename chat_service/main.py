@@ -344,7 +344,9 @@ async def websocket_endpoint(websocket: WebSocket):
                                 "receiver_username": session.query(User).filter_by(id=other_user_id).first().username,
                             }
                             await manager.send_personal_message(data, manager.active_connections.get(other_user_id))
-                            await manager.send_personal_message(data, manager.active_connections.get(this_user_id))
+                            # await manager.send_personal_message(data, manager.active_connections.get(this_user_id))
+                            await websocket.send_json(data)
+
 
 
                             # print(this_user.chat_list)
