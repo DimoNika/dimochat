@@ -344,9 +344,10 @@ async def websocket_endpoint(websocket: WebSocket):
                                 "receiver_username": session.query(User).filter_by(id=other_user_id).first().username,
                             }
                             await manager.send_personal_message(data, manager.active_connections.get(other_user_id))
+                            await manager.send_personal_message(data, manager.active_connections.get(this_user_id))
 
 
-                            print(this_user.chat_list)
+                            # print(this_user.chat_list)
 
                         except Exception as e:
                             print(f"Exeprion in creatin new chat: {e}")
