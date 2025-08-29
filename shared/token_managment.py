@@ -2,7 +2,16 @@ from datetime import datetime, timedelta, timezone
 from jose import jwt, jws, jwe
 from jose.exceptions import JWSError, ExpiredSignatureError
 
-SECRET_KEY = "JWT_SECRET_KEYJWT_SECRET_KEYJWT_SECRET_KEY1"
+# environment variables block
+from dotenv import load_dotenv
+import os
+from pathlib import Path
+
+env_path = Path(__file__).resolve().parent.parent / "shared" / ".env"
+load_dotenv(env_path)
+SECRET_KEY = os.getenv("SECRET_KEY")
+
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 15  # 15 mins
 REFRESH_TOKEN_EXPIRE_MINUTES = 72000  # 50 days
